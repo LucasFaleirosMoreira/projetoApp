@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/services/api_services.dart';
 import 'package:frontend/model/trator_model.dart';
+import 'package:frontend/services/mqtt_services.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key}) : super(key: key);
@@ -14,13 +15,23 @@ class _MyHomePageState extends State<MyHomePage> {
   String? valorSelecionado;
   final TextEditingController _valorController = TextEditingController();
   List<DadosApi> tratores = []; // Lista para armazenar os tratores
+  late MqttService mqttService;
+
 
   @override
   void initState() {
     super.initState();
     // Chama o método para buscar tratores
     _fetchTratores();
+    mqttService = MqttService('flutter_client'); // ->> ta dando erro no codigo, investigar o que pode ser
+    mqttService.connect(); // essa parte também
   }
+ @override
+  void dispose() {
+    mqttService.disconnect(); // Desconectar ao sair do widget
+    super.dispose();
+  }
+
 
   // Método para buscar tratores da API
   Future<void> _fetchTratores() async {
@@ -103,6 +114,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 onPressed: () {
                   valorSelecionado = _valorController.text;
                   if (tratorSelecionado != null) {
+                    final message = 'Abastecendo $valorSelecionado no $tratorSelecionado';
+                    mqttService.publish('seu/topico', message); // Envie a mensagem via MQTT
+                    
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
